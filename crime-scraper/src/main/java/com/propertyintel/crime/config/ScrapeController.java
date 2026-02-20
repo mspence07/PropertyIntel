@@ -56,7 +56,7 @@ public class ScrapeController {
     /**
      * Get crime summary for a postcode.
      *
-     * GET /crimes?postcode=BT23+4WJ&radius=500&months=12
+     * GET /crimes?postcode=BT1+4NX&radius=500&months=12
      *
      * Returns total crimes by category + monthly trend within radius of postcode.
      */
@@ -79,7 +79,7 @@ public class ScrapeController {
     /**
      * Get nearby street-level hotspots for a postcode.
      *
-     * GET /crimes/hotspots?postcode=BT23+4WJ&radius=500
+     * GET /crimes/hotspots?postcode=BT1+4NX&radius=500
      */
     @GetMapping("/crimes/hotspots")
     public ResponseEntity<?> getHotspots(
