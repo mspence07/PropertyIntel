@@ -1,0 +1,4 @@
+<clickhouse>
+    <!-- Force IPv4 only — required for Docker Desktop on Mac which disables IPv6 -->
+    <listen_host>0.0.0.0</listen_host>
+</clickhouse>

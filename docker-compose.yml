@@ -1,0 +1,95 @@
+version: '3.9'
+
+# Property Intel - Crime Scraper Stack
+# Includes: ClickHouse (data store) + Crime Scraper (ETL) + Grafana (optional dashboards)
+
+services:
+
+  # ── ClickHouse ────────────────────────────────────────────────────────────
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.3-alpine
+    container_name: property-intel-clickhouse
+    ports:
+      - "8123:8123"   # HTTP interface (JDBC / queries)
+      - "9000:9000"   # Native TCP interface
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./clickhouse/init:/docker-entrypoint-initdb.d        # runs SQL on first boot
+      - ./clickhouse/config:/etc/clickhouse-server/config.d  # IPv4-only override
+    environment:
+      CLICKHOUSE_DB: property_intel
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: ""   # Set a password in production!
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # ── Crime Scraper ─────────────────────────────────────────────────────────
+  crime-scraper:
+    build:
+      context: ./crime-scraper
+      dockerfile: Dockerfile
+    container_name: property-intel-crime-scraper
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      # ClickHouse connection
+      CLICKHOUSE_URL: jdbc:clickhouse://clickhouse:8123/property_intel
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: ""
+
+      # Output mode: CLICKHOUSE | CSV | BOTH
+      OUTPUT_MODE: CLICKHOUSE
+
+      # CSV output (used when OUTPUT_MODE is CSV or BOTH)
+      CSV_OUTPUT_DIR: /data/output
+
+      # Set to 'true' to immediately backfill on container start
+      RUN_ON_STARTUP: "false"
+
+      # How many months to backfill if RUN_ON_STARTUP=true
+      BACKFILL_MONTHS: "24"
+
+      # JVM / Spring profiles
+      SPRING_PROFILES_ACTIVE: production
+    volumes:
+      - scraper_output:/data/output
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ── Grafana (optional — for quick dashboards) ─────────────────────────────
+  grafana:
+    image: grafana/grafana:10.4.2
+    container_name: property-intel-grafana
+    depends_on:
+      - clickhouse
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin   # Change in production!
+      GF_INSTALL_PLUGINS: grafana-clickhouse-datasource
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    restart: unless-stopped
+
+volumes:
+  clickhouse_data:
+  scraper_output:
+  grafana_data:

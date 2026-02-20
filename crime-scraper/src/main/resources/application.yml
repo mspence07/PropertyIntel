@@ -1,0 +1,39 @@
+spring:
+  application:
+    name: property-intel-crime-scraper
+
+  datasource:
+    url: ${CLICKHOUSE_URL:jdbc:clickhouse://localhost:8123/property_intel}
+    username: ${CLICKHOUSE_USER:default}
+    password: ${CLICKHOUSE_PASSWORD:}
+    driver-class-name: com.clickhouse.jdbc.ClickHouseDriver
+    hikari:
+      connection-timeout: 30000
+      maximum-pool-size: 5
+
+  quartz:
+    job-store-type: memory
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+crime-scraper:
+  output:
+    mode: ${OUTPUT_MODE:CLICKHOUSE}
+    csv:
+      output-dir: ${CSV_OUTPUT_DIR:/data/output}
+      include-header: true
+
+  scheduling:
+    cron: "0 0 2 15 * ?"
+    run-on-startup: ${RUN_ON_STARTUP:false}
+    backfill-months: ${BACKFILL_MONTHS:24}
