@@ -4,7 +4,7 @@ A microservice that pulls PSNI crime data from data.police.uk and stores it in C
 
 ## How it works
 
-Downloads the monthly bulk archive from data.police.uk, extracts the Northern Ireland street-level crime CSV, and writes all records into ClickHouse with lat/lng coordinates. At query time, any full postcode (e.g. `BT23 4WJ`) is resolved to coordinates via postcodes.io, and crimes are returned within a configurable radius using ClickHouse's `greatCircleDistance()` function.
+Downloads the monthly bulk archive from data.police.uk, extracts the Northern Ireland street-level crime CSV, and writes all records into ClickHouse with lat/lng coordinates. At query time, any full postcode (e.g. `BT1 4NX`) is resolved to coordinates via postcodes.io, and crimes are returned within a configurable radius using ClickHouse's `greatCircleDistance()` function.
 
 ```
 data.police.uk/archive  →  Crime Scraper (Spring Boot)  →  ClickHouse
